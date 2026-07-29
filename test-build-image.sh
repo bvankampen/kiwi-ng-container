@@ -142,13 +142,13 @@ assert_contains "$dry_parallels" "Parallels Dir:[[:space:]]+.*/custom_parallels"
 assert_contains "$dry_parallels" "--volume .*/custom_parallels:/image_description/root/tmp/parallels_iso" "Should mount parallels ISO dir into overlay"
 echo "  [PASS]"
 
-# Test 14: Target architecture override via -a flag (auto-switches box to universal and sets --machine virt)
+# Test 14: Target architecture override via -a flag (auto-switches box to tumbleweed and sets --machine virt)
 echo "Test 14: Verification of aarch64 target architecture override via -a flag..."
 dry_arch=$(./build-image.sh --dry-run -a aarch64)
 assert_contains "$dry_arch" "Target Arch:[[:space:]]+aarch64" "Target arch should be aarch64"
-assert_contains "$dry_arch" "KIWI Box:[[:space:]]+universal" "Default box should auto-switch to universal for aarch64"
+assert_contains "$dry_arch" "KIWI Box:[[:space:]]+tumbleweed" "Default box should auto-switch to tumbleweed for aarch64"
 assert_contains "$dry_arch" "QEMU Machine:[[:space:]]+virt" "Machine should default to virt for aarch64"
-assert_contains "$dry_arch" "--box universal --aarch64 --machine virt" "Command should pass --box universal --aarch64 --machine virt"
+assert_contains "$dry_arch" "--box tumbleweed --aarch64 --machine virt" "Command should pass --box tumbleweed --aarch64 --machine virt"
 echo "  [PASS]"
 
 # Test 15: Target architecture via KIWI_TARGET_ARCH environment variable
@@ -162,7 +162,7 @@ echo "  [PASS]"
 echo "Test 16: Verification of auto aarch64 detection for RaspberryPi profile..."
 dry_rpi=$(./build-image.sh --dry-run -p RaspberryPi)
 assert_contains "$dry_rpi" "Target Arch:[[:space:]]+aarch64" "RaspberryPi profile should auto-detect aarch64"
-assert_contains "$dry_rpi" "KIWI Box:[[:space:]]+universal" "RaspberryPi profile should auto-switch box to universal"
+assert_contains "$dry_rpi" "KIWI Box:[[:space:]]+tumbleweed" "RaspberryPi profile should auto-switch box to tumbleweed"
 assert_contains "$dry_rpi" "--aarch64" "Command should pass --aarch64 for RaspberryPi profile"
 echo "  [PASS]"
 

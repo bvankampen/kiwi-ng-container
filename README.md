@@ -133,10 +133,10 @@ KIWI_PROFILE=kvm-and-xen ./build-image.sh
 ### 3. Apple Silicon (M1/M2/M3) & Cross-Architecture Builds
 The target architecture defaults to your host system architecture (`aarch64` on Apple Silicon). You can also explicitly specify `-a aarch64` or `-a x86_64`:
 ```bash
-# Build Vagrant ARM64 box on Apple Silicon M1/M2/M3 Mac (automatically uses universal box, virt machine, and handles zstd kernel unpacking)
+# Build Vagrant ARM64 box on Apple Silicon M1/M2/M3 Mac (automatically uses tumbleweed box, virt machine, and handles zstd kernel unpacking)
 ./build-image.sh -a aarch64
 
-# Build Raspberry Pi 4 ARM64 image (automatically switches to aarch64 and universal box)
+# Build Raspberry Pi 4 ARM64 image (automatically switches to aarch64 and tumbleweed box)
 ./build-image.sh -p RaspberryPi
 
 # Explicitly build Cloud ARM64 image

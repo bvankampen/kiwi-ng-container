@@ -259,10 +259,10 @@ if [ "$EXPLICIT_ARCH" = false ] && [[ -z "${KIWI_TARGET_ARCH:-}" ]]; then
     fi
 fi
 
-# Switch default box to 'universal' when building aarch64 images (since 'leap' box is x86_64-only)
+# Switch default box to 'tumbleweed' when building aarch64 images (since 'leap' box is x86_64-only)
 if [ "$TARGET_ARCH" = "aarch64" ] && [ "$EXPLICIT_BOX" = false ] && [[ -z "${KIWI_BOX:-}" ]]; then
     if [ "$BOX" = "leap" ]; then
-        BOX="universal"
+        BOX="tumbleweed"
     fi
 fi
 

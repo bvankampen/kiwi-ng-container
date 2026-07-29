@@ -31,7 +31,7 @@ Key goals for all modifications:
 ## Architectural Conventions & Fixes
 
 1. **Host Architecture Auto-Detection**:
-   - `build-image.sh` and `run-image.sh` auto-detect system architecture via `uname -m`. `arm64` or `aarch64` sets target defaults to `aarch64` and selects the `universal` KIWI box. `x86_64` defaults to `leap`.
+   - `build-image.sh` and `run-image.sh` auto-detect system architecture via `uname -m`. `arm64` or `aarch64` sets target defaults to `aarch64` and selects the `tumbleweed` KIWI box. `x86_64` defaults to `leap`.
 2. **QEMU Machine Selection**:
    - `aarch64` target requires `-machine virt` for QEMU execution inside `boxbuild`. `build-image.sh` automatically passes `-machine virt` when target architecture is `aarch64`.
 3. **zstd EFI zboot Kernel Unpacking**:
