@@ -53,8 +53,8 @@ The included `image_description/config.xml` provides build targets for various h
 
 | Profile | Target Architecture | Image Format | File System | Bootloader / Firmware |
 | :--- | :--- | :--- | :--- | :--- |
-| `Vagrant` | `x86_64`, `aarch64` | Vagrant Box (`vagrant`) | XFS | GRUB2 (UEFI) |
-| `Vagrant-parallels` | `x86_64`, `aarch64` | Vagrant Box (`vagrant`) | XFS | GRUB2 (UEFI) |
+| `Vagrant` | `x86_64`, `aarch64` | Vagrant Box (`vagrant`) | ext4 | GRUB2 (UEFI) |
+| `Vagrant-parallels` | `x86_64`, `aarch64` | Vagrant Box (`vagrant`) | ext4 | GRUB2 (UEFI) |
 | `kvm-and-xen` | `x86_64` | QCOW2 (`qcow2`) | Btrfs | GRUB2 (UEFI) |
 | `kvm` | `aarch64` | QCOW2 (`qcow2`) | Btrfs | GRUB2 (UEFI) |
 | `VMware` | `x86_64` | VMDK (`vmdk`) | Btrfs | GRUB2 (UEFI) |
