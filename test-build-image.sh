@@ -15,6 +15,7 @@ trap 'rm -rf "$TEST_DIR"' EXIT
 
 # Copy script to temp directory for testing
 cp ./build-image.sh "$TEST_DIR/build-image.sh"
+cp ./run-image.sh "$TEST_DIR/run-image.sh"
 cd "$TEST_DIR"
 
 # Helper function to assert output matches a pattern
@@ -49,16 +50,16 @@ assert_contains "$help_output" "Options:" "Help output should list options"
 assert_contains "$help_output" "Build an OpenSUSE Leap" "Help output should describe script purpose"
 echo "  [PASS]"
 
-# Test 2: Default dry-run behavior (should use docker, Cloud profile, and leap box)
+# Test 2: Default dry-run behavior (should use docker, Vagrant profile, and leap box)
 echo "Test 2: Verification of default dry-run behavior..."
 dry_output=$(./build-image.sh --dry-run)
 assert_contains "$dry_output" "Container Engine:[[:space:]]+docker" "Default engine should be docker"
-assert_contains "$dry_output" "Profile:[[:space:]]+Cloud" "Default profile should be Cloud"
+assert_contains "$dry_output" "Profile:[[:space:]]+Vagrant" "Default profile should be Vagrant"
 assert_contains "$dry_output" "KIWI Box:[[:space:]]+leap" "Default box should be leap"
 assert_contains "$dry_output" "docker run -it? --rm --privileged" "Dry run command should start with docker run"
 assert_contains "$dry_output" "dp.apps.rancher.io/containers/kiwi:10" "Should run the rancher kiwi:10 container"
 assert_contains "$dry_output" "--set-repo https://download.opensuse.org/distribution/leap/15.6/repo/oss" "Should set Leap 15.6 repo by default"
-assert_contains "$dry_output" "--profile Cloud" "Should set profile Cloud by default"
+assert_contains "$dry_output" "--profile Vagrant" "Should set profile Vagrant by default"
 assert_contains "$dry_output" "--box leap" "Should set box leap by default"
 echo "  [PASS]"
 
@@ -131,6 +132,116 @@ echo "  [PASS]"
 echo "Test 12: Verification of list-boxes dry-run output..."
 dry_list_boxes=$(./build-image.sh --dry-run --list-boxes)
 assert_contains "$dry_list_boxes" "system boxbuild --list-boxes" "Should invoke list-boxes command"
+echo "  [PASS]"
+
+# Test 13: Vagrant-parallels profile and custom parallels-dir
+echo "Test 13: Verification of Vagrant-parallels profile and parallels volume mount..."
+dry_parallels=$(./build-image.sh --dry-run -p Vagrant-parallels -s ./custom_parallels)
+assert_contains "$dry_parallels" "Profile:[[:space:]]+Vagrant-parallels" "Profile should be Vagrant-parallels"
+assert_contains "$dry_parallels" "Parallels Dir:[[:space:]]+.*/custom_parallels" "Parallels dir should be resolved"
+assert_contains "$dry_parallels" "--volume .*/custom_parallels:/image_description/root/tmp/parallels_iso" "Should mount parallels ISO dir into overlay"
+echo "  [PASS]"
+
+# Test 14: Target architecture override via -a flag (auto-switches box to universal)
+echo "Test 14: Verification of aarch64 target architecture override via -a flag..."
+dry_arch=$(./build-image.sh --dry-run -a aarch64)
+assert_contains "$dry_arch" "Target Arch:[[:space:]]+aarch64" "Target arch should be aarch64"
+assert_contains "$dry_arch" "KIWI Box:[[:space:]]+universal" "Default box should auto-switch to universal for aarch64"
+assert_contains "$dry_arch" "--box universal --aarch64" "Command should pass --box universal --aarch64"
+echo "  [PASS]"
+
+# Test 15: Target architecture via KIWI_TARGET_ARCH environment variable
+echo "Test 15: Verification of aarch64 target architecture via environment variable..."
+dry_arch_env=$(KIWI_TARGET_ARCH=aarch64 ./build-image.sh --dry-run)
+assert_contains "$dry_arch_env" "Target Arch:[[:space:]]+aarch64" "Target arch should be aarch64 from env"
+assert_contains "$dry_arch_env" "--aarch64" "Command should pass --aarch64 from env"
+echo "  [PASS]"
+
+# Test 16: Auto-detection of aarch64 architecture for RaspberryPi profile
+echo "Test 16: Verification of auto aarch64 detection for RaspberryPi profile..."
+dry_rpi=$(./build-image.sh --dry-run -p RaspberryPi)
+assert_contains "$dry_rpi" "Target Arch:[[:space:]]+aarch64" "RaspberryPi profile should auto-detect aarch64"
+assert_contains "$dry_rpi" "KIWI Box:[[:space:]]+universal" "RaspberryPi profile should auto-switch box to universal"
+assert_contains "$dry_rpi" "--aarch64" "Command should pass --aarch64 for RaspberryPi profile"
+echo "  [PASS]"
+
+# Test 17: Validation of invalid target architecture
+echo "Test 17: Validation of invalid target architecture..."
+assert_fails "./build-image.sh --dry-run -a invalid_arch" "Should fail with invalid target architecture"
+echo "  [PASS]"
+
+# Test 18: Verification of --no-parallels flag skipping volume mount
+echo "Test 18: Verification of --no-parallels flag..."
+dry_no_par=$(./build-image.sh --dry-run --no-parallels -s ./custom_parallels)
+assert_contains "$dry_no_par" "Parallels Tools:[[:space:]]+false" "Parallels tools should be set to false"
+if [[ "$dry_no_par" =~ /tmp/parallels_iso ]]; then
+    echo "FAIL: --no-parallels should not mount parallels_iso" >&2
+    exit 1
+fi
+echo "  [PASS]"
+
+# Test 19: Verification of --with-parallels flag enabling volume mount
+echo "Test 19: Verification of --with-parallels flag..."
+dry_with_par=$(./build-image.sh --dry-run --with-parallels -s ./custom_parallels)
+assert_contains "$dry_with_par" "Parallels Tools:[[:space:]]+true" "Parallels tools should be set to true"
+assert_contains "$dry_with_par" "--volume .*/custom_parallels:/image_description/root/tmp/parallels_iso" "Should mount parallels ISO dir when --with-parallels is passed"
+echo "  [PASS]"
+
+# Test 20: Verification of WITH_PARALLELS=false environment variable
+echo "Test 20: Verification of WITH_PARALLELS environment variable..."
+dry_par_env=$(WITH_PARALLELS=false ./build-image.sh --dry-run -s ./custom_parallels)
+assert_contains "$dry_par_env" "Parallels Tools:[[:space:]]+false" "Parallels tools should be false from env"
+if [[ "$dry_par_env" =~ /tmp/parallels_iso ]]; then
+    echo "FAIL: WITH_PARALLELS=false should not mount parallels_iso" >&2
+    exit 1
+fi
+echo "  [PASS]"
+
+# Test 21: Verification of run-image.sh help output and dry-run
+echo "Test 21: Verification of run-image.sh dry-run output..."
+dry_run_img=$(./run-image.sh --dry-run)
+assert_contains "$dry_run_img" "entrypoint qemu-system-x86_64" "run-image.sh should use qemu entrypoint"
+assert_contains "$dry_run_img" "-drive file=/target_image/" "run-image.sh should attach target image"
+echo "  [PASS]"
+
+# Test 22: Verification of run-image.sh with Parallels ISO
+echo "Test 22: Verification of run-image.sh with Parallels ISO attachment..."
+dry_run_par=$(./run-image.sh --dry-run --with-parallels -s ./custom_iso.iso)
+assert_contains "$dry_run_par" "-drive file=/parallels_iso/.*media=cdrom" "run-image.sh should mount Parallels ISO as CD-ROM"
+echo "  [PASS]"
+
+# Test 23: Verification of run-image.sh --no-parallels
+echo "Test 23: Verification of run-image.sh --no-parallels..."
+dry_run_nopar=$(./run-image.sh --dry-run --no-parallels)
+assert_contains "$dry_run_nopar" "Parallels ISO:[[:space:]]+Disabled/Not attached" "run-image.sh should disable Parallels ISO"
+if [[ "$dry_run_nopar" =~ media=cdrom ]]; then
+    echo "FAIL: run-image.sh --no-parallels should not attach CD-ROM drive" >&2
+    exit 1
+fi
+echo "  [PASS]"
+
+# Test 24: Verification of auto-switching Vagrant profile to Vagrant-parallels when MOUNT_PARALLELS resolves to true
+echo "Test 24: Verification of auto-switching to Vagrant-parallels..."
+dry_autoswitch=$(./build-image.sh --dry-run --with-parallels)
+assert_contains "$dry_autoswitch" "Profile:[[:space:]]+Vagrant-parallels" "Should auto-switch default Vagrant profile to Vagrant-parallels when --with-parallels is passed"
+assert_contains "$dry_autoswitch" "--profile Vagrant-parallels" "Should pass --profile Vagrant-parallels to KIWI"
+echo "  [PASS]"
+
+# Test 25: Verification that explicit profiles are NOT overridden by auto-switching
+echo "Test 25: Verification that explicit profiles are preserved..."
+dry_explicit_preserved=$(./build-image.sh --dry-run -p VMware --with-parallels)
+assert_contains "$dry_explicit_preserved" "Profile:[[:space:]]+VMware" "Explicit profile VMware should be preserved even with --with-parallels"
+assert_contains "$dry_explicit_preserved" "--profile VMware" "Should pass explicit --profile VMware to KIWI"
+echo "  [PASS]"
+
+# Test 26: Verification that parallels_iso is NOT mounted for non-Vagrant profiles even with --with-parallels
+echo "Test 26: Verification that parallels_iso is not mounted for non-Vagrant profiles..."
+dry_non_vagrant_no_par=$(./build-image.sh --dry-run -p VMware --with-parallels -s ./custom_parallels)
+assert_contains "$dry_non_vagrant_no_par" "Parallels Tools:.*active: false" "Parallels tools should not be active for VMware profile"
+if [[ "$dry_non_vagrant_no_par" =~ /tmp/parallels_iso ]]; then
+    echo "FAIL: parallels_iso should not be mounted for VMware profile" >&2
+    exit 1
+fi
 echo "  [PASS]"
 
 echo "=================================================="

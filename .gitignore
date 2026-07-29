@@ -8,8 +8,11 @@ kiwi_boxes/
 # Cloned/cached kiwi repository
 kiwi/
 
-# Temporary and system files
+# Parallels ISO files
+parallels_iso/*.iso
+
 *.log
 *.tmp
 *.swp
 .DS_Store
+*.bak
