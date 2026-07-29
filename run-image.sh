@@ -9,6 +9,7 @@ set -euo pipefail
 DEFAULT_ENGINE="docker"
 DEFAULT_MEMORY="4096"
 DEFAULT_ARCH="x86_64"
+DEFAULT_MACHINE=""
 DEFAULT_TARGET_DIR="./target_image"
 DEFAULT_PARALLELS_DIR="./parallels_iso"
 DEFAULT_SSH_PORT="2222"
@@ -17,6 +18,7 @@ DEFAULT_WITH_PARALLELS="auto"
 ENGINE="${CONTAINER_ENGINE:-$DEFAULT_ENGINE}"
 MEMORY="$DEFAULT_MEMORY"
 ARCH="${KIWI_TARGET_ARCH:-$DEFAULT_ARCH}"
+MACHINE="${KIWI_MACHINE:-$DEFAULT_MACHINE}"
 TARGET_DIR="$DEFAULT_TARGET_DIR"
 PARALLELS_DIR="$DEFAULT_PARALLELS_DIR"
 SSH_PORT="$DEFAULT_SSH_PORT"
@@ -41,6 +43,7 @@ Options:
   -e, --engine ENGINE       Container engine to use: 'docker' or 'podman' (default: $DEFAULT_ENGINE)
                             Can also be set via CONTAINER_ENGINE environment variable.
   -a, --arch ARCH           System architecture: 'x86_64' or 'aarch64' (default: $DEFAULT_ARCH)
+  -M, --machine MACHINE     QEMU machine model (default: 'virt' for aarch64, none for x86_64)
   -m, --memory MEM          RAM allocation in MB (default: $DEFAULT_MEMORY)
   -p, --ssh-port PORT       Host port forwarded to SSH port 22 in VM (default: $DEFAULT_SSH_PORT)
   -n, --dry-run             Print the container command without executing
@@ -99,6 +102,14 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             ARCH="$2"
+            shift 2
+            ;;
+        -M|--machine)
+            if [[ -z "${2:-}" ]]; then
+                echo "Error: Option '$1' requires an argument." >&2
+                exit 1
+            fi
+            MACHINE="$2"
             shift 2
             ;;
         -m|--memory)
@@ -237,10 +248,13 @@ else
     TTY_FLAG="-i"
 fi
 
-# Entrypoint QEMU executable
+# Entrypoint QEMU executable and machine setup
 QEMU_EXEC="qemu-system-x86_64"
 if [[ "$ARCH" == "aarch64" ]]; then
     QEMU_EXEC="qemu-system-aarch64"
+    if [[ -z "$MACHINE" ]]; then
+        MACHINE="virt"
+    fi
 fi
 
 # Construct container command
@@ -260,6 +274,17 @@ RUN_CMD+=(
     "dp.apps.rancher.io/containers/kiwi:10"
     "-m" "$MEMORY"
     "-smp" "2"
+)
+
+if [[ -n "$MACHINE" ]]; then
+    RUN_CMD+=("-machine" "$MACHINE")
+fi
+
+if [[ "$ARCH" == "aarch64" ]]; then
+    RUN_CMD+=("-cpu" "max")
+fi
+
+RUN_CMD+=(
     "-boot" "c"
     "-drive" "file=/target_image/$IMAGE_FILENAME,format=$FORMAT,if=virtio"
     "-net" "nic,model=virtio"
@@ -275,6 +300,9 @@ echo "=================================================="
 echo "QEMU OS Image Runner Configuration:"
 echo "  Container Engine:  $ENGINE"
 echo "  Architecture:      $ARCH"
+if [[ -n "$MACHINE" ]]; then
+echo "  QEMU Machine:      $MACHINE"
+fi
 echo "  Memory:            ${MEMORY}MB"
 echo "  Image File:        $ABS_IMAGE_PATH"
 if [ "$ATTACH_PARALLELS" = true ]; then

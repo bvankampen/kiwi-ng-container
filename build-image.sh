@@ -11,6 +11,7 @@ DEFAULT_ENGINE="docker"
 DEFAULT_PROFILE="Vagrant"
 DEFAULT_BOX="leap"
 DEFAULT_TARGET_ARCH="x86_64"
+DEFAULT_MACHINE=""
 DEFAULT_OUT_DIR="./target_image"
 DEFAULT_CACHE_DIR="./kiwi_boxes"
 DEFAULT_REPO_URL="https://download.opensuse.org/distribution/leap/15.6/repo/oss"
@@ -23,6 +24,7 @@ ENGINE="${CONTAINER_ENGINE:-$DEFAULT_ENGINE}"
 PROFILE="${KIWI_PROFILE:-$DEFAULT_PROFILE}"
 BOX="${KIWI_BOX:-$DEFAULT_BOX}"
 TARGET_ARCH="${KIWI_TARGET_ARCH:-$DEFAULT_TARGET_ARCH}"
+MACHINE="${KIWI_MACHINE:-$DEFAULT_MACHINE}"
 WITH_PARALLELS="${WITH_PARALLELS:-$DEFAULT_WITH_PARALLELS}"
 OUT_DIR="$DEFAULT_OUT_DIR"
 CACHE_DIR="$DEFAULT_CACHE_DIR"
@@ -51,6 +53,8 @@ Options:
                             Can also be set via the KIWI_PROFILE environment variable.
   -a, --target-arch ARCH    Target architecture: 'x86_64' or 'aarch64' (default: $DEFAULT_TARGET_ARCH)
                             Can also be set via the KIWI_TARGET_ARCH environment variable.
+  -m, --machine MACHINE     QEMU machine model (default: 'virt' for aarch64, none for x86_64)
+                            Can also be set via the KIWI_MACHINE environment variable.
   -b, --box BOX             KIWI box to build (default: $DEFAULT_BOX)
                             Can also be set via the KIWI_BOX environment variable.
   -l, --list-boxes          List all available build boxes and exit
@@ -103,6 +107,14 @@ while [[ $# -gt 0 ]]; do
             fi
             TARGET_ARCH="$2"
             EXPLICIT_ARCH=true
+            shift 2
+            ;;
+        -m|--machine)
+            if [[ -z "${2:-}" ]]; then
+                echo "Error: Option '$1' requires an argument." >&2
+                exit 1
+            fi
+            MACHINE="$2"
             shift 2
             ;;
         -b|--box)
@@ -212,6 +224,11 @@ if [ "$TARGET_ARCH" = "aarch64" ] && [ "$EXPLICIT_BOX" = false ] && [[ -z "${KIW
     if [ "$BOX" = "leap" ]; then
         BOX="universal"
     fi
+fi
+
+# Default machine model to 'virt' for aarch64 if not explicitly specified
+if [ "$TARGET_ARCH" = "aarch64" ] && [[ -z "$MACHINE" ]]; then
+    MACHINE="virt"
 fi
 
 # Verify container engine is installed (skip check during dry-run to allow cross-environment testing)
@@ -365,7 +382,15 @@ BUILD_CMD+=(
     "dp.apps.rancher.io/containers/kiwi:10"
     "--debug"
     "--profile" "$PROFILE"
-    "system" "boxbuild" "--box" "$BOX" "--$TARGET_ARCH" "--"
+    "system" "boxbuild" "--box" "$BOX" "--$TARGET_ARCH"
+)
+
+if [[ -n "$MACHINE" ]]; then
+    BUILD_CMD+=("--machine" "$MACHINE")
+fi
+
+BUILD_CMD+=(
+    "--"
     "--description" "/image_description"
     "--set-repo" "$REPO_URL"
     "--target-dir" "/target_image"
@@ -377,6 +402,9 @@ echo "KIWI Build Configuration:"
 echo "  Container Engine:  $ENGINE"
 echo "  Profile:           $PROFILE"
 echo "  Target Arch:       $TARGET_ARCH"
+if [[ -n "$MACHINE" ]]; then
+echo "  QEMU Machine:      $MACHINE"
+fi
 echo "  KIWI Box:          $BOX"
 echo "  Parallels Tools:   $WITH_PARALLELS (active: $MOUNT_PARALLELS)"
 echo "  Description Dir:   $ABS_DESC_DIR"

@@ -25,11 +25,25 @@ fi
 PARALLELS_ISO_DIR="/tmp/parallels_iso"
 if [ -d "$PARALLELS_ISO_DIR" ]; then
     ISO_FILE=""
-    if [ -f "$PARALLELS_ISO_DIR/prl-tools-lin.iso" ]; then
-        ISO_FILE="$PARALLELS_ISO_DIR/prl-tools-lin.iso"
-    elif [ -f "$PARALLELS_ISO_DIR/prl-tools-lin-arm.iso" ]; then
-        ISO_FILE="$PARALLELS_ISO_DIR/prl-tools-lin-arm.iso"
-    else
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        aarch64|arm64|arm*)
+            if [ -f "$PARALLELS_ISO_DIR/prl-tools-lin-arm.iso" ]; then
+                ISO_FILE="$PARALLELS_ISO_DIR/prl-tools-lin-arm.iso"
+            elif [ -f "$PARALLELS_ISO_DIR/prl-tools-lin.iso" ]; then
+                ISO_FILE="$PARALLELS_ISO_DIR/prl-tools-lin.iso"
+            fi
+            ;;
+        *)
+            if [ -f "$PARALLELS_ISO_DIR/prl-tools-lin.iso" ]; then
+                ISO_FILE="$PARALLELS_ISO_DIR/prl-tools-lin.iso"
+            elif [ -f "$PARALLELS_ISO_DIR/prl-tools-lin-arm.iso" ]; then
+                ISO_FILE="$PARALLELS_ISO_DIR/prl-tools-lin-arm.iso"
+            fi
+            ;;
+    esac
+
+    if [ -z "$ISO_FILE" ]; then
         ISO_FILE=$(find "$PARALLELS_ISO_DIR" -maxdepth 1 -name "*.iso" 2>/dev/null | head -n 1 || true)
     fi
 

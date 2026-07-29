@@ -142,12 +142,13 @@ assert_contains "$dry_parallels" "Parallels Dir:[[:space:]]+.*/custom_parallels"
 assert_contains "$dry_parallels" "--volume .*/custom_parallels:/image_description/root/tmp/parallels_iso" "Should mount parallels ISO dir into overlay"
 echo "  [PASS]"
 
-# Test 14: Target architecture override via -a flag (auto-switches box to universal)
+# Test 14: Target architecture override via -a flag (auto-switches box to universal and sets --machine virt)
 echo "Test 14: Verification of aarch64 target architecture override via -a flag..."
 dry_arch=$(./build-image.sh --dry-run -a aarch64)
 assert_contains "$dry_arch" "Target Arch:[[:space:]]+aarch64" "Target arch should be aarch64"
 assert_contains "$dry_arch" "KIWI Box:[[:space:]]+universal" "Default box should auto-switch to universal for aarch64"
-assert_contains "$dry_arch" "--box universal --aarch64" "Command should pass --box universal --aarch64"
+assert_contains "$dry_arch" "QEMU Machine:[[:space:]]+virt" "Machine should default to virt for aarch64"
+assert_contains "$dry_arch" "--box universal --aarch64 --machine virt" "Command should pass --box universal --aarch64 --machine virt"
 echo "  [PASS]"
 
 # Test 15: Target architecture via KIWI_TARGET_ARCH environment variable
@@ -242,6 +243,21 @@ if [[ "$dry_non_vagrant_no_par" =~ /tmp/parallels_iso ]]; then
     echo "FAIL: parallels_iso should not be mounted for VMware profile" >&2
     exit 1
 fi
+echo "  [PASS]"
+
+# Test 27: Custom QEMU machine flag via -m in build-image.sh
+echo "Test 27: Verification of custom QEMU machine flag in build-image.sh..."
+dry_machine=$(./build-image.sh --dry-run -m sbsa-ref)
+assert_contains "$dry_machine" "QEMU Machine:[[:space:]]+sbsa-ref" "Summary should display custom machine"
+assert_contains "$dry_machine" "--machine sbsa-ref" "Build command should pass --machine sbsa-ref"
+echo "  [PASS]"
+
+# Test 28: Verification of run-image.sh with aarch64 architecture and machine
+echo "Test 28: Verification of run-image.sh aarch64 machine and cpu flags..."
+dry_run_aarch64=$(./run-image.sh --dry-run -a aarch64)
+assert_contains "$dry_run_aarch64" "entrypoint qemu-system-aarch64" "run-image.sh should use qemu-system-aarch64 entrypoint"
+assert_contains "$dry_run_aarch64" "-machine virt" "run-image.sh should pass -machine virt for aarch64"
+assert_contains "$dry_run_aarch64" "-cpu max" "run-image.sh should pass -cpu max for aarch64"
 echo "  [PASS]"
 
 echo "=================================================="
