@@ -398,7 +398,70 @@ else
     TTY_FLAG="-i"
 fi
 
+# Helper function to unpack EFI zboot images in cache directory if needed
+unpack_cache_zboot_kernels() {
+    local cache_dir="$1"
+    if command -v python3 &>/dev/null && [[ -d "$cache_dir" ]]; then
+        python3 - "$cache_dir" << 'EOF'
+import os, sys, struct, ctypes
+
+cache_dir = sys.argv[1]
+for root, dirs, files in os.walk(cache_dir):
+    for file in files:
+        if file.startswith('kernel.'):
+            kernel_path = os.path.join(root, file)
+            try:
+                with open(kernel_path, 'rb') as f:
+                    data = f.read()
+                if data[:2] == b'MZ' and b'zimg' in data[:32]:
+                    start_off = struct.unpack('<I', data[8:12])[0]
+                    payload_size = struct.unpack('<I', data[12:16])[0]
+                    comp_type = data[24:32].rstrip(b'\x00')
+                    decomp = None
+                    if comp_type == b'zstd':
+                        payload = data[start_off:start_off + payload_size]
+                        for libname in ['libzstd.so.1', 'libzstd.so', 'libzstd.dylib', 'libzstd.1.dylib']:
+                            try:
+                                libzstd = ctypes.CDLL(libname)
+                                break
+                            except Exception:
+                                libzstd = None
+                        if libzstd:
+                            libzstd.ZSTD_decompress.argtypes = [
+                                ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t
+                            ]
+                            libzstd.ZSTD_decompress.restype = ctypes.c_size_t
+                            libzstd.ZSTD_isError.argtypes = [ctypes.c_size_t]
+                            libzstd.ZSTD_isError.restype = ctypes.c_uint
+                            out_capacity = 256 * 1024 * 1024
+                            out_buf = ctypes.create_string_buffer(out_capacity)
+                            res = libzstd.ZSTD_decompress(out_buf, out_capacity, payload, len(payload))
+                            if not libzstd.ZSTD_isError(res):
+                                decomp = out_buf.raw[:res]
+                    elif comp_type in (b'gzip', b'gz'):
+                        import gzip
+                        decomp = gzip.decompress(data[start_off:start_off + payload_size])
+                    elif comp_type in (b'xz', b'lzma'):
+                        import lzma
+                        decomp = lzma.decompress(data[start_off:start_off + payload_size])
+                    elif comp_type in (b'bz2', b'bzip2'):
+                        import bz2
+                        decomp = bz2.decompress(data[start_off:start_off + payload_size])
+
+                    if decomp:
+                        print(f"Unpacked EFI zboot kernel: {kernel_path}")
+                        with open(kernel_path, 'wb') as out_f:
+                            out_f.write(decomp)
+            except Exception:
+                pass
+EOF
+    fi
+}
+
 # Construct container build command
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BOX_DOWNLOAD_PATCH="$SCRIPT_DIR/scripts/box_download.py"
+
 BUILD_CMD=(
     "$ENGINE" "run"
     "$TTY_FLAG"
@@ -408,6 +471,11 @@ BUILD_CMD=(
     "--volume" "$ABS_OUT_DIR:/target_image"
     "--volume" "$ABS_CACHE_DIR:/.kiwi_boxes"
 )
+
+if [[ -f "$BOX_DOWNLOAD_PATCH" ]]; then
+    ABS_BOX_DOWNLOAD_PATCH=$(realpath "$BOX_DOWNLOAD_PATCH")
+    BUILD_CMD+=("--volume" "$ABS_BOX_DOWNLOAD_PATCH:/usr/lib/python3.11/site-packages/kiwi_boxed_plugin/box_download.py")
+fi
 
 # If parallels tools are enabled and directory exists, bind mount it into description overlay
 if [ "$MOUNT_PARALLELS" = true ]; then
@@ -477,6 +545,9 @@ if [ "$DRY_RUN" = true ]; then
 fi
 
 # Execute the build
+echo "Preparing KIWI box kernels..."
+unpack_cache_zboot_kernels "$ABS_CACHE_DIR"
+
 echo "Starting KIWI build via $ENGINE..."
 BUILD_STATUS=0
 if ! "${BUILD_CMD[@]}"; then
