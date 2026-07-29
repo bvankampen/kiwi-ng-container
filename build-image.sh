@@ -532,10 +532,16 @@ if [ "$USE_ACCEL" = false ]; then
     BUILD_CMD+=("--no-accel")
 fi
 
+# Format --set-repo argument with package_gpgcheck=false if simple URL is provided
+SET_REPO_ARG="$REPO_URL"
+if [[ "$REPO_URL" != *","* ]]; then
+    SET_REPO_ARG="$REPO_URL,rpm-md,repo,1,true,false"
+fi
+
 BUILD_CMD+=(
     "--"
     "--description" "/image_description"
-    "--set-repo" "$REPO_URL"
+    "--set-repo" "$SET_REPO_ARG"
     "--target-dir" "/target_image"
 )
 
