@@ -10,6 +10,7 @@ The build process is based on the reference guide from [SUSE Application Collect
 - **Host Architecture Auto-Detection:** Automatically detects host architecture (`x86_64` vs `aarch64` / Apple Silicon) and sets target defaults accordingly.
 - **Apple Silicon & ARM64 Support:** Out-of-the-box support for building and running `aarch64` images on M1/M2/M3 Macs with QEMU `virt` machine selection and automatic zstd EFI zboot kernel unpacking.
 - **KVM & Acceleration Auto-Detection:** Auto-detects missing `/dev/kvm` (e.g. Docker Desktop on macOS) and safely configures `--no-accel` and CPU `--cpu max`.
+- **Integrated OpenSUSE Build Keys:** Automatically includes `openSUSE-build-key` during bootstrap and configures repository GPG checking to ensure smooth chroot setup without `NOKEY` signature errors.
 - **Flexible CLI & Environment Variables:** Easily customize paths, repositories, machine types, and container engines via command-line flags or environment variables.
 - **Dry Run Mode (`-n` / `--dry-run`):** Preview generated container commands and directory structures without pulling images or building.
 - **Automated Directory & Permission Setup:** Creates required host directories and sets group write permissions (`chmod g+w`) necessary for container volume mounts.

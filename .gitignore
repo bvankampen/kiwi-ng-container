@@ -16,3 +16,6 @@ parallels_iso/*.iso
 *.swp
 .DS_Store
 *.bak
+
+# Unignore AGENTS.md for AI agent instructions
+!AGENTS.md
