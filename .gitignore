@@ -1,0 +1,15 @@
+# Build output directory
+target_image/
+
+# KIWI box cache directories
+kiwi_boxes/
+.kiwi_boxes/
+
+# Cloned/cached kiwi repository
+kiwi/
+
+# Temporary and system files
+*.log
+*.tmp
+*.swp
+.DS_Store
