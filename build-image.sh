@@ -12,6 +12,8 @@ DEFAULT_PROFILE="Vagrant"
 DEFAULT_BOX="leap"
 DEFAULT_TARGET_ARCH="x86_64"
 DEFAULT_MACHINE=""
+DEFAULT_CPU=""
+DEFAULT_ACCEL="auto"
 DEFAULT_OUT_DIR="./target_image"
 DEFAULT_CACHE_DIR="./kiwi_boxes"
 DEFAULT_REPO_URL="https://download.opensuse.org/distribution/leap/15.6/repo/oss"
@@ -25,6 +27,8 @@ PROFILE="${KIWI_PROFILE:-$DEFAULT_PROFILE}"
 BOX="${KIWI_BOX:-$DEFAULT_BOX}"
 TARGET_ARCH="${KIWI_TARGET_ARCH:-$DEFAULT_TARGET_ARCH}"
 MACHINE="${KIWI_MACHINE:-$DEFAULT_MACHINE}"
+CPU="${KIWI_CPU:-$DEFAULT_CPU}"
+ACCEL="${KIWI_ACCEL:-$DEFAULT_ACCEL}"
 WITH_PARALLELS="${WITH_PARALLELS:-$DEFAULT_WITH_PARALLELS}"
 OUT_DIR="$DEFAULT_OUT_DIR"
 CACHE_DIR="$DEFAULT_CACHE_DIR"
@@ -55,6 +59,11 @@ Options:
                             Can also be set via the KIWI_TARGET_ARCH environment variable.
   -m, --machine MACHINE     QEMU machine model (default: 'virt' for aarch64, none for x86_64)
                             Can also be set via the KIWI_MACHINE environment variable.
+  --cpu CPU                 QEMU CPU model (default: 'max' when KVM is unavailable, 'host' otherwise)
+                            Can also be set via the KIWI_CPU environment variable.
+  --accel                   Enable KVM hardware acceleration
+  --no-accel, --disable-kvm Disable KVM hardware acceleration (auto-detected if /dev/kvm is missing)
+                            Can also be set via KIWI_ACCEL=true|false|auto (default: $DEFAULT_ACCEL)
   -b, --box BOX             KIWI box to build (default: $DEFAULT_BOX)
                             Can also be set via the KIWI_BOX environment variable.
   -l, --list-boxes          List all available build boxes and exit
@@ -116,6 +125,22 @@ while [[ $# -gt 0 ]]; do
             fi
             MACHINE="$2"
             shift 2
+            ;;
+        --cpu)
+            if [[ -z "${2:-}" ]]; then
+                echo "Error: Option '$1' requires an argument." >&2
+                exit 1
+            fi
+            CPU="$2"
+            shift 2
+            ;;
+        --accel)
+            ACCEL="true"
+            shift
+            ;;
+        --no-accel|--disable-kvm)
+            ACCEL="false"
+            shift
             ;;
         -b|--box)
             if [[ -z "${2:-}" ]]; then
@@ -229,6 +254,21 @@ fi
 # Default machine model to 'virt' for aarch64 if not explicitly specified
 if [ "$TARGET_ARCH" = "aarch64" ] && [[ -z "$MACHINE" ]]; then
     MACHINE="virt"
+fi
+
+# Auto-detect KVM acceleration availability
+USE_ACCEL=true
+if [ "$ACCEL" = "false" ]; then
+    USE_ACCEL=false
+elif [ "$ACCEL" = "auto" ]; then
+    if [[ ! -c /dev/kvm ]]; then
+        USE_ACCEL=false
+    fi
+fi
+
+# Default CPU model to 'max' when KVM acceleration is disabled/unavailable and no CPU model was explicitly specified
+if [ "$USE_ACCEL" = false ] && [[ -z "$CPU" ]]; then
+    CPU="max"
 fi
 
 # Verify container engine is installed (skip check during dry-run to allow cross-environment testing)
@@ -389,6 +429,14 @@ if [[ -n "$MACHINE" ]]; then
     BUILD_CMD+=("--machine" "$MACHINE")
 fi
 
+if [[ -n "$CPU" ]]; then
+    BUILD_CMD+=("--cpu" "$CPU")
+fi
+
+if [ "$USE_ACCEL" = false ]; then
+    BUILD_CMD+=("--no-accel")
+fi
+
 BUILD_CMD+=(
     "--"
     "--description" "/image_description"
@@ -405,6 +453,10 @@ echo "  Target Arch:       $TARGET_ARCH"
 if [[ -n "$MACHINE" ]]; then
 echo "  QEMU Machine:      $MACHINE"
 fi
+if [[ -n "$CPU" ]]; then
+echo "  QEMU CPU:          $CPU"
+fi
+echo "  KVM Acceleration:  $USE_ACCEL"
 echo "  KIWI Box:          $BOX"
 echo "  Parallels Tools:   $WITH_PARALLELS (active: $MOUNT_PARALLELS)"
 echo "  Description Dir:   $ABS_DESC_DIR"
