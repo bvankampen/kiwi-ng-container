@@ -253,11 +253,12 @@ assert_contains "$dry_machine" "--machine sbsa-ref" "Build command should pass -
 echo "  [PASS]"
 
 # Test 28: Verification of run-image.sh with aarch64 architecture and machine
-echo "Test 28: Verification of run-image.sh aarch64 machine and cpu flags..."
+echo "Test 28: Verification of run-image.sh aarch64 machine, cpu, and accel flags..."
 dry_run_aarch64=$(./run-image.sh --dry-run -a aarch64)
 assert_contains "$dry_run_aarch64" "entrypoint qemu-system-aarch64" "run-image.sh should use qemu-system-aarch64 entrypoint"
 assert_contains "$dry_run_aarch64" "-machine virt" "run-image.sh should pass -machine virt for aarch64"
 assert_contains "$dry_run_aarch64" "-cpu max" "run-image.sh should pass -cpu max for aarch64"
+assert_contains "$dry_run_aarch64" "-accel accel=" "run-image.sh should pass -accel flag for aarch64"
 echo "  [PASS]"
 
 # Test 29: Verification of --no-accel and --cpu flags in build-image.sh
@@ -266,6 +267,12 @@ dry_no_accel=$(./build-image.sh --dry-run --no-accel --cpu cortex-a57)
 assert_contains "$dry_no_accel" "KVM Acceleration:[[:space:]]+false" "Summary should report KVM disabled"
 assert_contains "$dry_no_accel" "QEMU CPU:[[:space:]]+cortex-a57" "Summary should report cortex-a57 CPU"
 assert_contains "$dry_no_accel" "--cpu cortex-a57 --no-accel" "Command should pass --cpu cortex-a57 --no-accel"
+echo "  [PASS]"
+
+# Test 31: Verification of hvf acceleration selection for aarch64 when /dev/kvm is missing
+echo "Test 31: Verification of hvf acceleration selection for aarch64..."
+dry_hvf=$(./build-image.sh --dry-run -a aarch64 --accel hvf)
+assert_contains "$dry_hvf" "KVM Acceleration:[[:space:]]+hvf" "Summary should report hvf acceleration"
 echo "  [PASS]"
 
 # Test 30: Verification of host architecture auto-detection

@@ -145,8 +145,13 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --accel)
-            ACCEL="true"
-            shift
+            if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then
+                ACCEL="$2"
+                shift 2
+            else
+                ACCEL="true"
+                shift
+            fi
             ;;
         --no-accel|--disable-kvm)
             ACCEL="false"
@@ -266,18 +271,24 @@ if [ "$TARGET_ARCH" = "aarch64" ] && [[ -z "$MACHINE" ]]; then
     MACHINE="virt"
 fi
 
-# Auto-detect KVM acceleration availability
-USE_ACCEL=true
+# Auto-detect acceleration availability
+USE_ACCEL="kvm"
 if [ "$ACCEL" = "false" ]; then
-    USE_ACCEL=false
+    USE_ACCEL="false"
+elif [ "$ACCEL" = "hvf" ]; then
+    USE_ACCEL="hvf"
 elif [ "$ACCEL" = "auto" ]; then
     if [[ ! -c /dev/kvm ]]; then
-        USE_ACCEL=false
+        if [[ "$TARGET_ARCH" == "aarch64" ]]; then
+            USE_ACCEL="hvf"
+        else
+            USE_ACCEL="false"
+        fi
     fi
 fi
 
-# Default CPU model to 'max' when KVM acceleration is disabled/unavailable and no CPU model was explicitly specified
-if [ "$USE_ACCEL" = false ] && [[ -z "$CPU" ]]; then
+# Default CPU model to 'max' when acceleration is disabled and no CPU model was explicitly specified
+if [ "$USE_ACCEL" = "false" ] && [[ -z "$CPU" ]]; then
     CPU="max"
 fi
 
@@ -471,6 +482,7 @@ EOF
 # Construct container build command
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOX_DOWNLOAD_PATCH="$SCRIPT_DIR/scripts/box_download.py"
+BOX_BUILD_PATCH="$SCRIPT_DIR/scripts/box_build.py"
 
 BUILD_CMD=(
     "$ENGINE" "run"
@@ -485,6 +497,11 @@ BUILD_CMD=(
 if [[ -f "$BOX_DOWNLOAD_PATCH" ]]; then
     ABS_BOX_DOWNLOAD_PATCH=$(realpath "$BOX_DOWNLOAD_PATCH")
     BUILD_CMD+=("--volume" "$ABS_BOX_DOWNLOAD_PATCH:/usr/lib/python3.11/site-packages/kiwi_boxed_plugin/box_download.py")
+fi
+
+if [[ -f "$BOX_BUILD_PATCH" ]]; then
+    ABS_BOX_BUILD_PATCH=$(realpath "$BOX_BUILD_PATCH")
+    BUILD_CMD+=("--volume" "$ABS_BOX_BUILD_PATCH:/usr/lib/python3.11/site-packages/kiwi_boxed_plugin/box_build.py")
 fi
 
 # If parallels tools are enabled and directory exists, bind mount it into description overlay

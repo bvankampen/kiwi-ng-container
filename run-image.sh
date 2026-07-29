@@ -260,10 +260,16 @@ fi
 
 # Entrypoint QEMU executable and machine setup
 QEMU_EXEC="qemu-system-x86_64"
+ACCEL=""
 if [[ "$ARCH" == "aarch64" ]]; then
     QEMU_EXEC="qemu-system-aarch64"
     if [[ -z "$MACHINE" ]]; then
         MACHINE="virt"
+    fi
+    if [[ ! -c /dev/kvm ]]; then
+        ACCEL="hvf"
+    else
+        ACCEL="kvm"
     fi
 fi
 
@@ -290,6 +296,10 @@ if [[ -n "$MACHINE" ]]; then
     RUN_CMD+=("-machine" "$MACHINE")
 fi
 
+if [[ -n "$ACCEL" ]]; then
+    RUN_CMD+=("-accel" "accel=$ACCEL")
+fi
+
 if [[ "$ARCH" == "aarch64" ]]; then
     RUN_CMD+=("-cpu" "max")
 fi
@@ -312,6 +322,9 @@ echo "  Container Engine:  $ENGINE"
 echo "  Architecture:      $ARCH"
 if [[ -n "$MACHINE" ]]; then
 echo "  QEMU Machine:      $MACHINE"
+fi
+if [[ -n "$ACCEL" ]]; then
+echo "  QEMU Acceleration: $ACCEL"
 fi
 echo "  Memory:            ${MEMORY}MB"
 echo "  Image File:        $ABS_IMAGE_PATH"
