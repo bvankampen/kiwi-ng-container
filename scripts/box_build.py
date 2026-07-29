@@ -170,12 +170,11 @@ class BoxBuild:
             vm_machine.append(self.machine)
 
         if self.accel:
-            vm_machine.append('-accel')
             if isinstance(self.accel, str) and self.accel not in ('True', 'true', '1'):
+                vm_machine.append('-accel')
                 vm_machine.append(f'accel={self.accel}')
-            elif self.arch == 'aarch64' and not os.path.exists('/dev/kvm'):
-                vm_machine.append('accel=hvf')
-            else:
+            elif os.path.exists('/dev/kvm'):
+                vm_machine.append('-accel')
                 vm_machine.append('accel=kvm')
 
         if len(self.ssh_port) > 0:

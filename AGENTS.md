@@ -20,7 +20,7 @@ Key goals for all modifications:
   - `config.xml`: KIWI XML image definition file specifying build profiles (`Vagrant`, `Vagrant-parallels`, `kvm-and-xen`, `RaspberryPi`, `Cloud`, etc.), base packages, repository definitions, and image types.
   - `config.sh`: Post-installation customization script executed inside the target chroot during image build.
 - **`scripts/`**: Python container overlays mounted into `/usr/lib/python3.11/site-packages/kiwi_boxed_plugin/` inside the KIWI container:
-  - `box_build.py`: Patches `BoxBuild.run()` to support custom QEMU machine types (`-machine virt`), CPU types, and `-accel accel=hvf` acceleration when `/dev/kvm` is missing on macOS ARM64 hosts.
+  - `box_build.py`: Patches `BoxBuild.run()` to support custom QEMU machine types (`-machine virt`), CPU types, and acceleration configuration.
   - `box_download.py`: Patches `_extract_kernel_from_tarball()` to automatically decompress zstd-compressed EFI zboot Linux kernels (common in openSUSE Leap 15.6 ARM64 box downloads).
 - **`parallels_iso/`**: Directory for Parallels Guest Tools ISOs (`prl-tools-lin.iso` for x86_64, `prl-tools-lin-arm.iso` for ARM64).
 - **`kiwi_boxes/`**: Cached KIWI build box dependencies (e.g. `universal`, `leap`, `tumbleweed`).
@@ -37,7 +37,7 @@ Key goals for all modifications:
 3. **zstd EFI zboot Kernel Unpacking**:
    - OpenSUSE Leap 15.6 ARM64 kernel binaries in build boxes are compressed EFI zboot binaries. `scripts/box_download.py` inspects kernel headers and decompresses zstd payloads using `libzstd.so.1` ctypes interface.
 4. **macOS / Docker Desktop Acceleration**:
-   - When `/dev/kvm` is missing on macOS ARM64 hosts, `scripts/box_build.py` falls back to `accel=hvf` or `--no-accel` with CPU type `--cpu max`.
+   - When `/dev/kvm` is missing on macOS ARM64 hosts, `scripts/box_build.py` and `build-image.sh` default to `--no-accel` with CPU type `--cpu max` (since `hvf` is currently unstable/unsupported in QEMU container builds).
 5. **GPG Signing Keys & Bootstrap Phase**:
    - `openSUSE-build-key` is included in `<packages type="bootstrap">` in `config.xml` to prevent `NOKEY` RPM signature verification failures during early chroot creation.
    - Repositories set `package_gpgcheck="false"` and `--set-repo` parameters include `$REPO_URL,rpm-md,repo,1,true,false` for reliable package downloads during build-time.

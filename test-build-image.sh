@@ -253,12 +253,11 @@ assert_contains "$dry_machine" "--machine sbsa-ref" "Build command should pass -
 echo "  [PASS]"
 
 # Test 28: Verification of run-image.sh with aarch64 architecture and machine
-echo "Test 28: Verification of run-image.sh aarch64 machine, cpu, and accel flags..."
+echo "Test 28: Verification of run-image.sh aarch64 machine and cpu flags..."
 dry_run_aarch64=$(./run-image.sh --dry-run -a aarch64)
 assert_contains "$dry_run_aarch64" "entrypoint qemu-system-aarch64" "run-image.sh should use qemu-system-aarch64 entrypoint"
 assert_contains "$dry_run_aarch64" "-machine virt" "run-image.sh should pass -machine virt for aarch64"
 assert_contains "$dry_run_aarch64" "-cpu max" "run-image.sh should pass -cpu max for aarch64"
-assert_contains "$dry_run_aarch64" "-accel accel=" "run-image.sh should pass -accel flag for aarch64"
 echo "  [PASS]"
 
 # Test 29: Verification of --no-accel and --cpu flags in build-image.sh

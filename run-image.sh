@@ -267,7 +267,7 @@ if [[ "$ARCH" == "aarch64" ]]; then
         MACHINE="virt"
     fi
     if [[ ! -c /dev/kvm ]]; then
-        ACCEL="hvf"
+        ACCEL=""
     else
         ACCEL="kvm"
     fi

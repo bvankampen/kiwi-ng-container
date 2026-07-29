@@ -279,11 +279,7 @@ elif [ "$ACCEL" = "hvf" ]; then
     USE_ACCEL="hvf"
 elif [ "$ACCEL" = "auto" ]; then
     if [[ ! -c /dev/kvm ]]; then
-        if [[ "$TARGET_ARCH" == "aarch64" ]]; then
-            USE_ACCEL="hvf"
-        else
-            USE_ACCEL="false"
-        fi
+        USE_ACCEL="false"
     fi
 fi
 
