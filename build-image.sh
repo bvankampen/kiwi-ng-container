@@ -6,11 +6,21 @@
 
 set -euo pipefail
 
+# Auto-detect default target architecture from host system
+HOST_ARCH="$(uname -m)"
+case "$HOST_ARCH" in
+    aarch64|arm64)
+        DEFAULT_TARGET_ARCH="aarch64"
+        ;;
+    *)
+        DEFAULT_TARGET_ARCH="x86_64"
+        ;;
+esac
+
 # Default values
 DEFAULT_ENGINE="docker"
 DEFAULT_PROFILE="Vagrant"
 DEFAULT_BOX="leap"
-DEFAULT_TARGET_ARCH="x86_64"
 DEFAULT_MACHINE=""
 DEFAULT_CPU=""
 DEFAULT_ACCEL="auto"

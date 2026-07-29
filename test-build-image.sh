@@ -268,6 +268,17 @@ assert_contains "$dry_no_accel" "QEMU CPU:[[:space:]]+cortex-a57" "Summary shoul
 assert_contains "$dry_no_accel" "--cpu cortex-a57 --no-accel" "Command should pass --cpu cortex-a57 --no-accel"
 echo "  [PASS]"
 
+# Test 30: Verification of host architecture auto-detection
+echo "Test 30: Verification of host architecture auto-detection..."
+host_arch_detected="$(uname -m)"
+case "$host_arch_detected" in
+    aarch64|arm64) EXPECTED_ARCH="aarch64" ;;
+    *) EXPECTED_ARCH="x86_64" ;;
+esac
+dry_host_arch=$(./build-image.sh --dry-run)
+assert_contains "$dry_host_arch" "Target Arch:[[:space:]]+$EXPECTED_ARCH" "Default target arch should match host arch ($EXPECTED_ARCH)"
+echo "  [PASS]"
+
 echo "=================================================="
 echo "ALL TESTS PASSED SUCCESSFULLY!"
 echo "=================================================="

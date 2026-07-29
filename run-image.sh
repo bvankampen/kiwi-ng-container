@@ -5,10 +5,20 @@
 
 set -euo pipefail
 
+# Auto-detect default architecture from host system
+HOST_ARCH="$(uname -m)"
+case "$HOST_ARCH" in
+    aarch64|arm64)
+        DEFAULT_ARCH="aarch64"
+        ;;
+    *)
+        DEFAULT_ARCH="x86_64"
+        ;;
+esac
+
 # Default values
 DEFAULT_ENGINE="docker"
 DEFAULT_MEMORY="4096"
-DEFAULT_ARCH="x86_64"
 DEFAULT_MACHINE=""
 DEFAULT_TARGET_DIR="./target_image"
 DEFAULT_PARALLELS_DIR="./parallels_iso"
