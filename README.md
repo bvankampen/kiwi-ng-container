@@ -69,6 +69,7 @@ Options:
                             Can also be set via the KIWI_PROFILE environment variable.
   -b, --box BOX             KIWI box to build (default: leap)
                             Can also be set via the KIWI_BOX environment variable.
+  -l, --list-boxes          List all available build boxes and exit
   -o, --output-dir DIR      Directory where the built image will be saved (default: ./target_image)
   -c, --cache-dir DIR       Directory where the KIWI boxes are cached (default: ./kiwi_boxes)
   -d, --desc-dir DIR        Directory containing the KIWI image description (default: ./image_description)
@@ -97,7 +98,13 @@ Specify the profile via CLI option or environment variable:
 KIWI_PROFILE=kvm-and-xen ./build-image.sh
 ```
 
-### 3. Using Podman
+### 3. Listing Available KIWI Build Boxes
+List all pre-configured build boxes supported by the KIWI container:
+```bash
+./build-image.sh --list-boxes
+```
+
+### 4. Using Podman
 Specify Podman via CLI flag or environment variable:
 ```bash
 # Via CLI option
@@ -107,7 +114,7 @@ Specify Podman via CLI flag or environment variable:
 CONTAINER_ENGINE=podman ./build-image.sh
 ```
 
-### 3. Dry Run Preview
+### 5. Dry Run Preview
 Validate configuration and preview container invocation commands without executing:
 ```bash
 ./build-image.sh --dry-run

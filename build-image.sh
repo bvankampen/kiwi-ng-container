@@ -24,6 +24,7 @@ CACHE_DIR="$DEFAULT_CACHE_DIR"
 REPO_URL="$DEFAULT_REPO_URL"
 DESC_DIR=""
 DRY_RUN=false
+LIST_BOXES=false
 
 show_help() {
     cat << EOF
@@ -38,6 +39,7 @@ Options:
                             Can also be set via the KIWI_PROFILE environment variable.
   -b, --box BOX             KIWI box to build (default: $DEFAULT_BOX)
                             Can also be set via the KIWI_BOX environment variable.
+  -l, --list-boxes          List all available build boxes and exit
   -o, --output-dir DIR      Directory where the built image will be saved (default: $DEFAULT_OUT_DIR)
   -c, --cache-dir DIR       Directory where the KIWI boxes are cached (default: $DEFAULT_CACHE_DIR)
   -d, --desc-dir DIR        Directory containing the KIWI image description.
@@ -112,6 +114,10 @@ while [[ $# -gt 0 ]]; do
             REPO_URL="$2"
             shift 2
             ;;
+        -l|--list-boxes)
+            LIST_BOXES=true
+            shift
+            ;;
         -n|--dry-run)
             DRY_RUN=true
             shift
@@ -140,6 +146,45 @@ if [ "$DRY_RUN" = false ]; then
         echo "Error: Container engine '$ENGINE' is not installed or not in your PATH." >&2
         exit 1
     fi
+fi
+
+# Handle listing available boxes
+if [ "$LIST_BOXES" = true ]; then
+    if [ "$DRY_RUN" = true ]; then
+        echo "[Dry Run] Would execute: $ENGINE run -i --rm dp.apps.rancher.io/containers/kiwi:10 system boxbuild --list-boxes"
+        exit 0
+    fi
+    "$ENGINE" run -i --rm dp.apps.rancher.io/containers/kiwi:10 system boxbuild --list-boxes | awk '
+BEGIN {
+    print "Available KIWI Boxes:"
+}
+/^\[/ { next }
+/^- arch:/ {
+    if (box != "") {
+        printf "  - %-12s (%s)\n", box, archs
+    }
+    box = ""
+    archs = ""
+    next
+}
+/^    name: / {
+    arch = $2
+    if (archs == "") {
+        archs = arch
+    } else {
+        archs = archs ", " arch
+    }
+}
+/^  name: / {
+    box = $2
+}
+END {
+    if (box != "") {
+        printf "  - %-12s (%s)\n", box, archs
+    }
+}
+'
+    exit 0
 fi
 
 # Determine description directory

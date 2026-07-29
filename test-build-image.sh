@@ -127,6 +127,12 @@ assert_contains "$dry_box_env" "KIWI Box:[[:space:]]+tumbleweed" "Box should be 
 assert_contains "$dry_box_env" "--box tumbleweed" "Build command should receive --box tumbleweed from env"
 echo "  [PASS]"
 
+# Test 12: List boxes option in dry-run mode
+echo "Test 12: Verification of list-boxes dry-run output..."
+dry_list_boxes=$(./build-image.sh --dry-run --list-boxes)
+assert_contains "$dry_list_boxes" "system boxbuild --list-boxes" "Should invoke list-boxes command"
+echo "  [PASS]"
+
 echo "=================================================="
 echo "ALL TESTS PASSED SUCCESSFULLY!"
 echo "=================================================="
