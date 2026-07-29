@@ -253,7 +253,7 @@
     <users profiles="Vagrant,Vagrant-parallels">
         <user name="vagrant" password="vagrant" pwdformat="plain" home="/home/vagrant" groups="vagrant"/>
     </users>
-    <repository type="rpm-md" package_gpgcheck="false">
+    <repository type="rpm-md">
         <source path="obsrepositories:/"/>
     </repository>
     <packages type="image">
@@ -403,6 +403,5 @@
         <package name="glibc-locale-base"/>
         <package name="ca-certificates-mozilla"/>
         <package name="openSUSE-release"/>
-        <package name="openSUSE-build-key"/>
     </packages>
 </image>
