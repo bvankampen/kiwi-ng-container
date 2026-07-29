@@ -14,8 +14,8 @@
         <profile name="VMware" description="Minimal for VMware" arch="x86_64"/>
         <profile name="MS-HyperV" description="Minimal for Hyper-V" arch="aarch64,x86_64"/>
         <profile name="Cloud" description="Minimal for Cloud" arch="aarch64,x86_64"/>
-        <profile name="Vagrant" description="Minimal for Vagrant" arch="x86_64"/>
-        <profile name="Vagrant-parallels" description="Minimal for Vagrant (Parallels)" arch="x86_64"/>
+        <profile name="Vagrant" description="Minimal for Vagrant" arch="aarch64,x86_64"/>
+        <profile name="Vagrant-parallels" description="Minimal for Vagrant (Parallels)" arch="aarch64,x86_64"/>
         <profile name="RaspberryPi" description="Minimal for the Raspberry Pi" arch="aarch64"/>
     </profiles>
     <preferences profiles="kvm-and-xen">
