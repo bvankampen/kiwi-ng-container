@@ -481,7 +481,7 @@ def main():
     qemu_bin = find_qemu_binary(target_arch)
     if not qemu_bin:
         print(f"Error: QEMU binary for '{target_arch}' ('qemu-system-{target_arch}' or 'qemu-kvm') was not found on your system.")
-        print("Please install QEMU using your package manager (e.g. 'brew install qemu' on macOS, or 'apt install qemu-system' on Ubuntu).")
+        print("Please install QEMU using your package manager (e.g. 'brew install qemu' on macOS, 'zypper in qemu-x86' on openSUSE/SLES, or 'apt install qemu-system' on Ubuntu).")
         sys.exit(1)
 
     # Get QEMU configuration parameters
