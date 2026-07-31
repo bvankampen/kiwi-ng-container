@@ -19,3 +19,7 @@ parallels_iso/*.iso
 
 # Unignore AGENTS.md for AI agent instructions
 !AGENTS.md
+
+.venv
+
+image_description/root
