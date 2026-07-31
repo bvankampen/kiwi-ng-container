@@ -43,6 +43,52 @@ from kiwi_boxed_plugin.exceptions import (
 log = logging.getLogger('kiwi')
 
 
+# Monkey patch Defaults to support fallback to security_model=none if user extended attributes (xattrs) are not supported.
+# On macOS hosts, file systems shared via Docker/Podman (virtiofs/gRPC FUSE) do not support POSIX user xattrs,
+# which causes QEMU 9p sharing with security_model=mapped to fail with "Operation not supported" (EOPNOTSUPP) when creating or writing files.
+_orig_get_qemu_shared_path_setup_9p = Defaults.get_qemu_shared_path_setup_9p
+
+@staticmethod
+def get_qemu_shared_path_setup_9p_patched(
+    index: int, path: str, mount_tag: str
+) -> List[str]:
+    security_model = 'mapped'
+    test_file = os.path.join(path, f'.xattr_test_{index}')
+    try:
+        with open(test_file, 'w') as f:
+            f.write('test')
+        if hasattr(os, 'setxattr'):
+            os.setxattr(test_file, 'user.test_xattr', b'test')
+        else:
+            raise AttributeError("os.setxattr not available")
+        os.remove(test_file)
+    except Exception:
+        security_model = 'none'
+        try:
+            os.remove(test_file)
+        except Exception:
+            pass
+
+    if security_model == 'none':
+        log.info(
+            f"Path '{path}' does not support user extended attributes (common on macOS). "
+            f"Falling back to 9p security_model=none for mount_tag '{mount_tag}'."
+        )
+
+    return [
+        '-fsdev',
+        'local,security_model={0},id=fsdev{1},path={2}'.format(
+            security_model, index, path
+        ),
+        '-device',
+        'virtio-9p-pci,id=fs{0},fsdev=fsdev{0},mount_tag={1}'.format(
+            index, mount_tag
+        )
+    ]
+
+Defaults.get_qemu_shared_path_setup_9p = get_qemu_shared_path_setup_9p_patched
+
+
 class BoxBuild:
     """
     **Implements boxbuild command**
